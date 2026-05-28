@@ -28,7 +28,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["open", "high", "low", "close"])
     df = df[(df["high"] >= df["low"]) & (df["open"] > 0) & (df["close"] > 0)]
     df = df[~df.index.duplicated(keep="first")]
-    logger.info(f"Cleaned data: {before} → {len(df)} rows")
+    logger.info(f"Cleaned data: {before} -> {len(df)} rows")
     return df
 
 

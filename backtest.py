@@ -56,8 +56,8 @@ def main() -> None:
 
     df = load_and_prepare(str(data_path), config)
     log.info(
-        "Loaded %d candles  |  %s → %s",
-        len(df), df.index[0], df.index[-1],
+        "Loaded %d candles  |  %s to %s",
+        len(df), str(df.index[0]), str(df.index[-1]),
     )
 
     trades = run_orb(df, config)

@@ -4,6 +4,9 @@ orb_start: "05:00"
 orb_end: "05:15"
 session_end: "15:00"
 take_profit_r: 2.0
+min_orb_range: 8.0
+allowed_directions:
+  - short
 initial_equity: 10000.0
 risk_per_trade: 100.0
 atr_period: 14

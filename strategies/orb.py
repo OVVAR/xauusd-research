@@ -76,6 +76,8 @@ def run_orb(df: pd.DataFrame, config: dict) -> list:
     orb_end = _parse_time(config["orb_end"])
     session_end = _parse_time(config["session_end"])
     tp_r = config["take_profit_r"]
+    min_orb_range = config.get("min_orb_range", 0.0)
+    allowed_directions = set(config.get("allowed_directions", ["long", "short"]))
 
     trades = []
     dates = sorted(set(df.index.date))
@@ -103,6 +105,10 @@ def run_orb(df: pd.DataFrame, config: dict) -> list:
             logger.debug("%s: zero ORB range — skipping", date)
             continue
 
+        if orb_range < min_orb_range:
+            logger.debug("%s: ORB range %.2f below minimum %.2f — skipping", date, orb_range, min_orb_range)
+            continue
+
         trade_mask = (session_df.index.time >= orb_end) & (
             session_df.index.time <= session_end
         )
@@ -127,7 +133,7 @@ def run_orb(df: pd.DataFrame, config: dict) -> list:
                 close = candle["close"]
                 regime = candle.get("regime", "normal")
 
-                if close > orb_high:
+                if close > orb_high and "long" in allowed_directions:
                     entry = close
                     sl = orb_low
                     risk = entry - sl
@@ -149,7 +155,7 @@ def run_orb(df: pd.DataFrame, config: dict) -> list:
                         date, entry, sl, entry + tp_r * risk,
                     )
 
-                elif close < orb_low:
+                elif close < orb_low and "short" in allowed_directions:
                     entry = close
                     sl = orb_high
                     risk = sl - entry
