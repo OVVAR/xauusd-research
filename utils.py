@@ -1,21 +1,18 @@
 import os
 import json
-import hashlib
-import secrets
 import subprocess
+
+import bcrypt
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 
-def hash_password(password: str) -> str:
-    salt = secrets.token_hex(32)
-    digest = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${digest}"
+def hash_password(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
 
-def verify_password(password: str, stored: str) -> bool:
-    salt, digest = stored.split("$", 1)
-    return hashlib.sha256((salt + password).encode()).hexdigest() == digest
+def verify_password(password: str, stored: bytes) -> bool:
+    return bcrypt.checkpw(password.encode(), stored)
 
 
 def load_config(path: str) -> dict:
