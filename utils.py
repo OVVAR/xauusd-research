@@ -1,8 +1,8 @@
-import os
 import json
-import subprocess
+import os
 
 import bcrypt
+import requests
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
@@ -16,9 +16,15 @@ def verify_password(password: str, stored: bytes) -> bool:
 
 
 def load_config(path: str) -> dict:
-    with open(path) as f:
-        return json.load(f)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Config file not found: {path}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in config file {path}: {e}")
 
 
 def send_webhook(url: str, data: str) -> None:
-    subprocess.run(["curl", "-X", "POST", url, "-d", data], check=True)
+    response = requests.post(url, data=data, timeout=10)
+    response.raise_for_status()
