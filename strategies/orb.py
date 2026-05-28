@@ -80,10 +80,11 @@ def run_orb(df: pd.DataFrame, config: dict) -> list:
     allowed_directions = set(config.get("allowed_directions", ["long", "short"]))
 
     trades = []
-    dates = sorted(set(df.index.date))
+    # groupby is O(n) total vs O(n*sessions) for repeated index.date comparisons
+    grouped = df.groupby(df.index.date)
+    dates = sorted(grouped.groups.keys())
 
-    for date in dates:
-        session_df = df[df.index.date == date]
+    for date, session_df in grouped:
 
         # ORB window: [orb_start, orb_end) — candles that have fully closed
         # before the ORB end time. Anti-lookahead: we never peek at the first

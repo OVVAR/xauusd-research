@@ -7,10 +7,28 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+_OHLCV_COLS = {"open", "high", "low", "close", "volume"}
+_OHLCV_DTYPE = {"open": "float32", "high": "float32", "low": "float32",
+                "close": "float32", "volume": "float32"}
+
+
 def load_raw(path: str) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    if "time" not in df.columns:
+    # Peek at headers to select only OHLCV columns — skips TradingView indicator
+    # columns (Volume MA, OR High, VWAP, etc.) that waste memory and parse time.
+    header = pd.read_csv(path, nrows=0)
+    orig_cols = list(header.columns)
+    norm_cols = [c.lower().strip() for c in orig_cols]
+    if "time" not in norm_cols:
         raise ValueError("CSV must contain a 'time' column")
+
+    # Map normalised → original name for usecols (read_csv needs original names)
+    norm_to_orig = dict(zip(norm_cols, orig_cols))
+    keep_norm = ["time"] + [c for c in norm_cols if c in _OHLCV_COLS]
+    keep_orig = [norm_to_orig[c] for c in keep_norm]
+    dtype_map = {norm_to_orig[k]: v for k, v in _OHLCV_DTYPE.items() if k in keep_norm}
+
+    df = pd.read_csv(path, usecols=keep_orig, dtype=dtype_map)
+    df.columns = [c.lower().strip() for c in df.columns]
 
     sample = str(df["time"].iloc[0]).strip()
     if sample.isdigit():
@@ -19,7 +37,8 @@ def load_raw(path: str) -> pd.DataFrame:
         df["time"] = pd.to_datetime(df["time"], utc=True)
 
     df = df.set_index("time").sort_index()
-    df.columns = [c.lower().strip() for c in df.columns]
+    mb = df.memory_usage(deep=True).sum() / 1024 ** 2
+    logger.info("Loaded %.1f MB from %s (%d cols)", mb, path, len(df.columns))
     return df
 
 
